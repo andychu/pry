@@ -24,9 +24,9 @@ class PryTest(unittest.TestCase):
     self.assertIn('GetThreadStacks()', msg)
 
   def testHeap(self):
-    d = pry.GetHeapTop()
+    d = pry.GetHeapStats()
     pprint.pprint(d)
-    msg = pry.FormatHeapTop(d)
+    msg = pry.FormatHeapStats(d)
     print msg
     self.assertIn('Python objects', msg)
     self.assertIn("<type 'dict'>", msg)

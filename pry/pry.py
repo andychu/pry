@@ -30,8 +30,6 @@ def GetThreadStacks():
 
   Format is a list of dicts.  Each dict is a record representing a thread.
   """
-  d = {}
-
   frames = sys._current_frames()  # pylint: disable-msg=W0212
   # A list of (id, thread) tuples.
   threads = []
@@ -67,12 +65,12 @@ def GetThreadStacks():
 
     threads.append(thread)
 
-  return threads
+  return {'thread-stacks': threads}
 
 
 def FormatThreadStacks(d):
   chunks = ['Python threads:\n\n']
-  for thread in d:
+  for thread in d['thread-stacks']:
     chunks.append('--- Thread %s (name: %s) (daemon: %s) stack: ---\n' %
                    (thread['id'], thread['name'], thread['daemon']))
     frame_tuples = thread['frames']
@@ -80,7 +78,7 @@ def FormatThreadStacks(d):
   return ''.join(chunks)
 
 
-def GetHeapTop():
+def GetHeapStats():
   """Returns Python memory usage statistics as a dict."""
 
   count = {}
@@ -91,7 +89,7 @@ def GetHeapTop():
     mem_used[t] = mem_used.get(t, 0) + sys.getsizeof(obj)
 
   rows = []
-  d = {'rows': rows}
+  d = {'heap-stats': rows}
   for total_size, type_ in sorted(((v, k) for k, v in mem_used.iteritems()),
                                   reverse=True):
     # convert the type to a string
@@ -107,9 +105,9 @@ def GetHeapTop():
   return d
 
 
-def FormatHeapTop(d):
+def FormatHeapStats(d):
   chunks = ['Python objects (total bytes, count, type):\n\n']
-  for row in d['rows']:
+  for row in d['heap-stats']:
     chunks.append('%12s %12s  %s\n' % row)
 
   message = d.get('message')
