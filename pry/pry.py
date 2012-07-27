@@ -65,6 +65,9 @@ def GetThreadStacks():
 
     threads.append(thread)
 
+  # Sort by name
+  threads.sort(key=lambda t: t['name'])
+
   return {'thread-stacks': threads}
 
 
