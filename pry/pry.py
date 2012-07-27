@@ -25,8 +25,12 @@ def _FormatTID(tid):
   return '%x' % tid
 
 
-def ShowThreads():
-  """Formats and returns Python thread stacks."""
+def GetThreadStacks():
+  """Returns Python thread stacks.
+
+  Format is a list of dicts.  Each dict is a record representing a thread.
+  """
+  d = {}
 
   frames = sys._current_frames()  # pylint: disable-msg=W0212
   # A list of (id, thread) tuples.
@@ -38,30 +42,45 @@ def ShowThreads():
     threads = threading._active.items()  # pylint: disable-msg=W0212
   else:
     threads = [(t.ident, t) for t in threading.enumerate()]
-  thread_names = dict((tid, '(name: %s) ' % t.getName())
-                      for tid, t in threads)
-  thread_dmode = dict((tid, '(daemon: %s) ' % t.daemon)
-                      for tid, t in threads)
+  thread_names = dict((tid, t.getName()) for tid, t in threads)
+  thread_dmode = dict((tid, t.daemon) for tid, t in threads)
 
   content = ['Python threads:\n\n']
+  threads = []
   for thread_id, frame in frames.items():
-    content.append('--- Thread %s %s%sstack: ---\n' %
-                   (_FormatTID(thread_id), thread_names.get(thread_id, ''),
-                    thread_dmode.get(thread_id, '')))
     frame_tuples = []
+    thread = {
+        'id': _FormatTID(thread_id),
+        'name': thread_names.get(thread_id, ''),
+        'daemon': thread_dmode.get(thread_id, ''),
+        'frames': frame_tuples,
+        }
     while frame:
       filename = frame.f_code.co_filename
       lineno = frame.f_lineno
       line = linecache.getline(filename, lineno)
       if 'google3' in filename:
         filename = '.../' + filename[filename.rindex('google3'):]
+
       frame_tuples.append((filename, lineno, frame.f_code.co_name, line))
       frame = frame.f_back
-    content.extend(traceback.format_list(frame_tuples))
-  return ''.join(content)
+
+    threads.append(thread)
+
+  return threads
 
 
-def HeapTop():
+def FormatThreadStacks(d):
+  chunks = ['Python threads:\n\n']
+  for thread in d:
+    chunks.append('--- Thread %s (name: %s) (daemon: %s) stack: ---\n' %
+                   (thread['id'], thread['name'], thread['daemon']))
+    frame_tuples = thread['frames']
+    chunks.extend(traceback.format_list(frame_tuples))
+  return ''.join(chunks)
+
+
+def GetHeapTop():
   """Returns Python memory usage statistics as a dict."""
 
   count = {}
@@ -88,7 +107,7 @@ def HeapTop():
   return d
 
 
-def ShowHeap(d):
+def FormatHeapTop(d):
   chunks = ['Python objects (total bytes, count, type):\n\n']
   for row in d['rows']:
     chunks.append('%12s %12s  %s\n' % row)

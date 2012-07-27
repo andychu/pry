@@ -5,6 +5,7 @@
 # in the COPYING file.
 
 import unittest
+import pprint
 
 import pry
 
@@ -14,16 +15,18 @@ class PryTest(unittest.TestCase):
   def assertIn(self, needle, haystack):
     self.assert_(needle in haystack, haystack)
 
-  def testShowThreads(self):
-    msg = pry.ShowThreads()
+  def testThreads(self):
+    d = pry.GetThreadStacks()
+    pprint.pprint(d)
+    msg = pry.FormatThreadStacks(d)
     print msg
     self.assertIn('Python threads:', msg)
-    self.assertIn('ShowThreads()', msg)
+    self.assertIn('GetThreadStacks()', msg)
 
-  def testShowHeap(self):
-    d = pry.HeapTop()
-    print d
-    msg = pry.ShowHeap(d)
+  def testHeap(self):
+    d = pry.GetHeapTop()
+    pprint.pprint(d)
+    msg = pry.FormatHeapTop(d)
     print msg
     self.assertIn('Python objects', msg)
     self.assertIn("<type 'dict'>", msg)
