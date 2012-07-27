@@ -21,7 +21,9 @@ class PryTest(unittest.TestCase):
     self.assertIn('ShowThreads()', msg)
 
   def testShowHeap(self):
-    msg = pry.ShowHeap()
+    d = pry.HeapTop()
+    print d
+    msg = pry.ShowHeap(d)
     print msg
     self.assertIn('Python objects', msg)
     self.assertIn("<type 'dict'>", msg)

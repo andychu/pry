@@ -61,25 +61,42 @@ def ShowThreads():
   return ''.join(content)
 
 
-def ShowHeap():
-  """Formats and returns Python memory usage statistics."""
+def HeapTop():
+  """Returns Python memory usage statistics as a dict."""
 
   count = {}
   mem_used = {}
   for obj in gc.get_objects():
-    count[type(obj)] = count.get(type(obj), 0) + 1
-    mem_used[type(obj)] = mem_used.get(type(obj), 0) + sys.getsizeof(obj)
+    t = type(obj)
+    count[t] = count.get(t, 0) + 1
+    mem_used[t] = mem_used.get(t, 0) + sys.getsizeof(obj)
 
-  content = ['Python objects (total bytes, count, type):\n\n']
+  rows = []
+  d = {'rows': rows}
   for total_size, type_ in sorted(((v, k) for k, v in mem_used.iteritems()),
                                   reverse=True):
-    content.append('%12s %12s  %s\n' % (total_size, count[type_], type_))
+    # convert the type to a string
+    rows.append((total_size, count[type_], str(type_)))
 
   if hasattr(gc, 'is_tracked'):
     # This behavior is new in 2.7 and 3.1.
-    content.append(
-        '\n\nCaution: pry only shows objects tracked by the GC, so it\n'
+    d['message'] = (
+        'Caution: pry only shows objects tracked by the GC, so it\n'
         'does not include objects of atomic type, or built-in containers\n'
         'with all keys and value of atomic type.\n')
 
-  return ''.join(content)
+  return d
+
+
+def ShowHeap(d):
+  chunks = ['Python objects (total bytes, count, type):\n\n']
+  for row in d['rows']:
+    chunks.append('%12s %12s  %s\n' % row)
+
+  message = d.get('message')
+  if message:
+    chunks.append('\n\n')
+    chunks.append(message)
+  return ''.join(chunks)
+
+
