@@ -84,19 +84,33 @@ def FormatThreadStacks(d):
 def GetHeapStats():
   """Returns Python memory usage statistics as a dict."""
 
-  count = {}
-  mem_used = {}
+  obj_counts = {}  # type -> number of instances
+  mem_used = {}  # type -> # bytes
+  total_count = 0
+  total_bytes = 0
+
   for obj in gc.get_objects():
     t = type(obj)
-    count[t] = count.get(t, 0) + 1
-    mem_used[t] = mem_used.get(t, 0) + sys.getsizeof(obj)
+    obj_counts[t] = obj_counts.get(t, 0) + 1
+
+    num_bytes = sys.getsizeof(obj)
+    mem_used[t] = mem_used.get(t, 0) + num_bytes
+
+    total_count += 1
+    total_bytes += num_bytes
 
   rows = []
-  d = {'heap-stats': rows}
+  d = {
+      'heap-stats': rows,
+      'total_num_objects': total_count,
+      'total_num_bytes': total_bytes,
+      }
   for total_size, type_ in sorted(((v, k) for k, v in mem_used.iteritems()),
                                   reverse=True):
     # convert the type to a string
-    rows.append((total_size, count[type_], str(type_)))
+    count = obj_counts[type_]
+    average_size = float(total_size) / count
+    rows.append((total_size, count, average_size, str(type_)))
 
   if hasattr(gc, 'is_tracked'):
     # This behavior is new in 2.7 and 3.1.
@@ -109,14 +123,16 @@ def GetHeapStats():
 
 
 def FormatHeapStats(d):
-  chunks = ['Python objects (total bytes, count, type):\n\n']
+  chunks = ['Python objects (total bytes, count, average, type):\n\n']
   for row in d['heap-stats']:
-    chunks.append('%12s %12s  %s\n' % row)
+    chunks.append('%12s %12s %10.1f   %s\n' % row)
+
+  chunks.append('\n')
+  chunks.append('Total bytes: %s\n' % d['total_num_bytes'])
+  chunks.append('Total number of objects: %s\n' % d['total_num_objects'])
 
   message = d.get('message')
   if message:
     chunks.append('\n\n')
     chunks.append(message)
   return ''.join(chunks)
-
-
